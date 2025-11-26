@@ -1,0 +1,12 @@
+{
+  "name": "badges-generator",
+  "version": "1.0.0",
+  "description": "Badge Generator with SVG to PNG conversion",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "sharp": "^0.33.0"
+  }
+}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badge Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="preview-section">
+                <div class="canvas-wrapper">
+                    <div id="svgPreview"></div>
+                    <canvas id="badgeCanvas" style="display: none;"></canvas>
+                    <div id="placeholder" class="placeholder">
+                        <p>Loading badge template...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls-section">
+                <header>
+                    <h1>Devfest Badge Generator</h1>
+                    <p>Create your custom badge in seconds</p>
+                </header>
+
+                <div class="form-group template-selector">
+                    <label for="templateSelect">Choose Template</label>
+                    <div class="template-options">
+                        <label class="template-option selected">
+                            <input type="radio" name="template" value="templates/badge-template-1.svg" checked>
+                            <span class="template-preview" style="background-color: #FBBC04;">1</span>
+                        </label>
+                        <label class="template-option">
+                            <input type="radio" name="template" value="templates/badge-template-2.svg">
+                            <span class="template-preview" style="background-color: #4285F4;">2</span>
+                        </label>
+                        <label class="template-option">
+                            <input type="radio" name="template" value="templates/badge-template-3.svg">
+                            <span class="template-preview" style="background-color: #EA4335;">3</span>
+                        </label>
+                        <label class="template-option">
+                            <input type="radio" name="template" value="templates/badge-template-4.svg">
+                            <span class="template-preview" style="background-color: #34A853;">4</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group upload-group">
+                    <label for="templateUpload" class="upload-btn">
+                        <span>📁 Upload Custom Template (SVG)</span>
+                        <input type="file" id="templateUpload" accept="image/svg+xml">
+                    </label>
+                </div>
+
+                <!-- Custom Template Placeholders (shown after custom template upload) -->
+                <div id="customPlaceholders" class="custom-placeholders" style="display: none;">
+                    <div class="placeholders-header">
+                        <span class="placeholders-title">🎯 Custom Placeholders</span>
+                        <button id="closePlaceholders" class="close-placeholders-btn">✕</button>
+                    </div>
+                    <p class="placeholders-hint">Enter the exact text in your SVG that should be replaced for each field:</p>
+                    <div class="inputs-grid">
+                        <div class="form-group">
+                            <label for="placeholderFirstName">First Name placeholder</label>
+                            <input type="text" id="placeholderFirstName" placeholder="e.g. {{firstName}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="placeholderLastName">Last Name placeholder</label>
+                            <input type="text" id="placeholderLastName" placeholder="e.g. {{lastName}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="placeholderTitle">Title placeholder</label>
+                            <input type="text" id="placeholderTitle" placeholder="e.g. {{title}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="placeholderCompany">Company placeholder</label>
+                            <input type="text" id="placeholderCompany" placeholder="e.g. {{company}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="placeholderLocation">Location placeholder</label>
+                            <input type="text" id="placeholderLocation" placeholder="e.g. {{location}}">
+                        </div>
+                        <div class="form-group">
+                            <label for="placeholderBadgeType">Badge Type placeholder</label>
+                            <input type="text" id="placeholderBadgeType" placeholder="e.g. {{badgeType}}">
+                        </div>
+                    </div>
+                    <div class="placeholders-actions">
+                        <button id="detectPlaceholders" class="detect-btn">🔍 Auto-Detect</button>
+                        <button id="validatePlaceholders" class="validate-btn">✓ Apply Placeholders</button>
+                    </div>
+                    <div id="placeholderStatus" class="placeholder-status" style="display: none;"></div>
+                </div>
+
+                <!-- Bulk Import Section -->
+                <div class="form-group csv-section">
+                    <label for="fileUpload" class="upload-btn csv-btn">
+                        <span>🗒️ Import Attendees List</span>
+                        <input type="file" id="fileUpload" accept=".csv,.json,.xlsx,.xls">
+                    </label>
+                    <p class="file-hint">Supports CSV, JSON, and Excel (.xlsx) files</p>
+                </div>
+
+                <!-- Participant Selector (shown after file upload) -->
+                <div id="participantSection" class="participant-section" style="display: none;">
+                    <div class="participant-count">
+                        <span id="participantCount">0</span> participants loaded
+                    </div>
+                    
+                    <div class="search-container">
+                        <input type="text" id="participantSearch" class="search-input" placeholder="🔍 Search by name, company, or title...">
+                        <div id="searchResults" class="search-results" style="display: none;"></div>
+                    </div>
+                    
+                    <div id="selectedParticipant" class="selected-participant" style="display: none;">
+                        <div class="selected-info">
+                            <span class="selected-name" id="selectedName"></span>
+                            <span class="selected-details" id="selectedDetails"></span>
+                        </div>
+                        <button id="clearSelection" class="clear-btn">✕</button>
+                    </div>
+                    
+                    <div class="bulk-actions">
+                        <button id="downloadSelected" class="action-btn selected-btn" disabled>
+                            📥 Download Selected Badge
+                        </button>
+                        <button id="downloadAll" class="action-btn all-btn">
+                            📦 Download All Badges (ZIP)
+                        </button>
+                    </div>
+                    
+                    <div id="csvProgress" class="csv-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <p id="progressText">Processing...</p>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <p class="section-label">Or create a single badge manually:</p>
+
+                <div class="inputs-grid">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" placeholder="Jane">
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" placeholder="Doe">
+                    </div>
+                    <div class="form-group">
+                        <label for="title">Job Title</label>
+                        <input type="text" id="title" placeholder="Software Engineer">
+                    </div>
+                    <div class="form-group">
+                        <label for="company">Company</label>
+                        <input type="text" id="company" placeholder="Acme Corp">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" placeholder="Belgium" value="Belgium">
+                    </div>
+                    <div class="form-group">
+                        <label for="badgeType">Badge Type</label>
+                        <input type="text" id="badgeType" placeholder="Partner" value="Partner">
+                    </div>
+                </div>
+
+                <button id="downloadBtn" class="download-btn" disabled>📥 Download Manual Badge (PNG)</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js?v=9"></script>
+</body>
+</html>
